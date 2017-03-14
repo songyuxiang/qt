@@ -5,34 +5,35 @@
 #include <QtGui>
 #include <QtCore>
 #include <QtSerialPort/QSerialPort>
+#include "settingdialog.h"
+#include <datastructure.h>
 namespace Ui {
 class MainWindow;
 }
-namespace yuxiang {
-struct SerialPortInfo
-{
-    QString name;
-    QSerialPort::BaudRate baudrate;
-    QSerialPort::DataBits databits=QSerialPort::Data8;
-    QSerialPort::FlowControl flowcontrol=QSerialPort::NoFlowControl;
-    QSerialPort::Parity parity=QSerialPort::NoParity;
-    QSerialPort::StopBits stopbits;
-};
-}
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
     explicit MainWindow(QWidget *parent = 0);
-    yuxiang::SerialPortInfo testSerialPort(QString portname);
-    ~MainWindow();
+    QVector<QString> getValidPortName();
 
+    ~MainWindow();
+private:
+    void initSettings();
 private slots:
-    void on_actionAutoConfigre_triggered();
+    void on_actionSettings_triggered();
+    void updateSerialportInfo(yuxiang::SerialPortInfo portInfo);
+    void on_actionConnect_triggered();
+    void readData();
+    void on_actionDisconnect_triggered();
 
 private:
     Ui::MainWindow *ui;
+    QSerialPort *m_serialport=NULL;
+    SettingDialog *m_settingDialog=NULL;
+    yuxiang::SerialPortInfo m_serialportInfo;
 };
 
 #endif // MAINWINDOW_H
