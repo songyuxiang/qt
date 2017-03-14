@@ -2,7 +2,10 @@
 #include "ui_mainwindow.h"
 #include <QtSerialPort/QSerialPortInfo>
 #include <QDebug>
-
+#include <QFileDialog>
+#include <QTextStream>
+#include <QtGui>
+#include <QtCore>
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -10,6 +13,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     m_serialport=new QSerialPort(this);
     m_settingDialog=new SettingDialog(this);
+    m_savingThread=new SaveThread(this);
     //update port name list
     getValidPortName();
     initSettings();
@@ -48,6 +52,7 @@ MainWindow::~MainWindow()
 {
     delete m_serialport;
     delete m_settingDialog;
+    delete m_savingThread;
 }
 
 void MainWindow::initSettings()
@@ -90,24 +95,81 @@ void MainWindow::on_actionConnect_triggered()
     m_serialport->setFlowControl(m_serialportInfo.flowcontrol);
     m_serialport->setParity(m_serialportInfo.parity);
     m_serialport->setStopBits(m_serialportInfo.stopbits);
-    qDebug()<<m_serialportInfo.name<<m_serialportInfo.baudrate<<m_serialportInfo.databits
-           <<m_serialportInfo.flowcontrol<<m_serialportInfo.parity<<m_serialportInfo.stopbits;
     if(m_serialport->open(QIODevice::ReadWrite))
     {
         ui->actionDisconnect->setEnabled(true);
         ui->actionConnect->setEnabled(false);
+        ui->actionSettings->setEnabled(false);
+        ui->actionSave->setEnabled(false);
+        ui->textEdit_new->setEnabled(false);
     }
+    m_currentTime="";
 }
 
 void MainWindow::readData()
 {
+    QString currentTime=QDateTime::currentDateTime().toString("hh:mm:ss,yyyy-MM-dd");
+    if (m_currentTime!=currentTime)
+    {
+        if(m_currentTime!="")
+        {
+            m_savingThread->SaveData("<DateTime/>");
+            ui->textEdit->append("<DateTime/>\n");
+        }
+        m_currentTime=currentTime;
+        m_savingThread->SaveData("<DateTime "+currentTime +">");
+        ui->textEdit->append("<DateTime "+currentTime +">");
+    }
     const QByteArray data=m_serialport->readAll();
-    qDebug()<<QString(data);
+
+    m_savingThread->SaveData(QString(data));
+
+    ui->textEdit->append(QString(data));
 }
 
 void MainWindow::on_actionDisconnect_triggered()
 {
     ui->actionConnect->setChecked(false);
     ui->actionDisconnect->setEnabled(false);
+    ui->actionConnect->setEnabled(true);
+    ui->actionSave->setEnabled(true);
+    ui->actionSettings->setEnabled(true);
+    ui->textEdit_new->setEnabled(true);
     m_serialport->close();
+}
+
+void MainWindow::on_actionSave_triggered()
+{
+    QString fileName=QFileDialog::getSaveFileName(this,tr("Save the log file"),"","text file(*.txt);;All files(*.*)");
+    QFile file(fileName);
+    if(file.open(QIODevice::WriteOnly))
+    {
+        QTextStream in(&file);
+        in<<ui->textEdit_new->toPlainText();
+    }
+}
+
+void MainWindow::on_pushButton_depth_clicked()
+{
+    QString text=ui->textEdit->toPlainText();
+    QStringList stringList1=text.split("<DateTime/>");
+    foreach (QString string, stringList1) {
+
+        QStringList stringList2=string.split(",");
+        if(stringList2.size()>0)
+        {
+
+            int index=stringList2.indexOf("M");
+            if(index>1)
+            {
+                QString depth=(stringList2.at(index-1));
+                QString result=string.mid(0,32)+"\n Depth:"+depth;
+                ui->textEdit_new->append(result);
+            }
+        }
+
+
+    }
+
+
 }

@@ -7,6 +7,7 @@
 #include <QtSerialPort/QSerialPort>
 #include "settingdialog.h"
 #include <datastructure.h>
+#include "savethread.h"
 namespace Ui {
 class MainWindow;
 }
@@ -29,11 +30,17 @@ private slots:
     void readData();
     void on_actionDisconnect_triggered();
 
+    void on_actionSave_triggered();
+
+    void on_pushButton_depth_clicked();
+
 private:
     Ui::MainWindow *ui;
     QSerialPort *m_serialport=NULL;
     SettingDialog *m_settingDialog=NULL;
     yuxiang::SerialPortInfo m_serialportInfo;
+    SaveThread *m_savingThread=NULL;
+    QString m_currentTime="";
 };
 
 #endif // MAINWINDOW_H
