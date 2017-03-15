@@ -36,3 +36,6 @@ HEADERS  += mainwindow.h \
 
 FORMS    += mainwindow.ui \
     settingdialog.ui
+
+RESOURCES += \
+    images.qrc
